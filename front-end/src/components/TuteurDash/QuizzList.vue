@@ -24,24 +24,25 @@
         <!-- Liste des quizz -->
         <div v-else>
           <div v-if="quizzListe.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div
+            <div 
               v-for="quizz in quizzListe"
-              :key="quizz.titre"
+              :key="quizz.titre + quizz.idCours"
               class="card transform transition-all hover:scale-105"
             >
+              <h2 class="font-medium text-indigo-600 mb-2 flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                {{ quizz.coursTitre }}
+              </h2>
+
               <div class="text">
                 <div class="flex items-center justify-between mb-4">
-                  <h2 class="title">{{ quizz.titre }}</h2>
+                  <p class="title">{{ quizz.titre }}</p>
                   <span class="bg-indigo-100 text-indigo-800 text-sm font-medium px-2.5 py-0.5 rounded">
                     {{ quizz.questionCount }} Q
                   </span>
                 </div>
-                <p class="font-medium text-indigo-600 mb-2 flex items-center">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                  </svg>
-                  {{ quizz.coursTitre }}
-                </p>
               </div>
 
               <div class="flex justify-between items-center mt-4">
@@ -57,8 +58,6 @@
                 </router-link>
 
                 <div class="flex space-x-2">
-            
-
                   <button
                     @click="deleteQuizzGroup(quizz.titre, quizz.idCours)"
                     class="btn-action text-red-600 hover:text-red-800"

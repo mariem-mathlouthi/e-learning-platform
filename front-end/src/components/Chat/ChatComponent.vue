@@ -147,11 +147,14 @@ export default {
       const { pusher, channel } = chatApiService.initializePusher(
         this.currentUserId, 
         this.currentUserRole,
+        this.currentUserRole,
         (message) => {
           // Only add the message if it's not from the current user
           // This prevents duplicate messages since we already add them optimistically
           if (message.sender_type !== this.currentUserId) {
+          if (message.sender_type !== this.currentUserId) {
             this.messages.push({
+              content: message.message,
               content: message.message,
               senderId: message.senderId,
               timestamp: new Date(message.timestamp)
@@ -161,6 +164,7 @@ export default {
             if (!document.hasFocus()) {
               this.$emit('new-message', {
                 title: `Nouveau message de ${this.chatPartner.name}`,
+                message: message.message,
                 message: message.message,
                 timestamp: message.timestamp
               });
@@ -195,6 +199,7 @@ export default {
         
         if (response.data.success) {
           this.messages = response.data.messages.map(msg => ({
+            content: msg.message,
             content: msg.message,
             senderId: msg.sender_id,
             sender_type: msg.sender_type,

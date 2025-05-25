@@ -86,7 +86,7 @@ Route::group(['middleware' => 'cors'], function () {
     Route::post('/signupEntreprise', [authController::class, 'signUpEntreprise']);
     Route::post('/signupTuteur', [authController::class, 'signUpTuteur']);
 
-    Route::post('/admin', [adminController::class, 'signUpAdmin']);
+   Route::post('/admin', [adminController::class, 'signUpAdmin']);
     Route::post('/login', [authController::class, 'LoginUser']);
     Route::post('/modifyStudent', [studentController::class, 'ModifyEtudiantInfo']);
     Route::post('/modifyEntreprise', [entrepriseController::class, 'ModifyEntrepriseInfo']);
@@ -98,6 +98,8 @@ Route::group(['middleware' => 'cors'], function () {
     Route::get('/getDemandes/{idEtudiant}', [demandeController::class, 'getAllDemandes']);
     Route::get('/getDemandeById/{id}', [demandeController::class, 'getDemandeById']);
     Route::get('/getDemandeByOfferId/{offerId}', [demandeController::class, 'getDemandeByOfferId']);
+    Route::post('/addDemande', [demandeController::class, 'addDemande']);
+    Route::post('/updateSatutDemande/{id}', [demandeController::class, 'updateStatut']);
     Route::get('/Demandes', [demandeController::class, 'Demandes']);
     Route::post('/addOffre', [offreController::class, 'addOffre']);
     Route::get('/getOffres/{idEntreprise}', [offreController::class, 'getAllOffres']);

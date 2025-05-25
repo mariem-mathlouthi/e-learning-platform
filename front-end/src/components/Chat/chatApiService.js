@@ -264,6 +264,8 @@ const chatApiService = {
     }
   },
   
+  },
+  
 
   /**
    * Get unread messages count for the current user
@@ -315,7 +317,45 @@ const chatApiService = {
           }
         };
       }
+      if (!authToken) {
+        console.error('Authentication token not found.');
+        return {
+          data: {
+            success: false,
+            message: 'Authentication token not found.'
+          }
+        };
+      }
 
+      // Prepare the message data and endpoint based on sender role
+      let apiEndpoint;
+      let apiMessageData;
+
+      if (messageData.senderRole === 'tuteur') {
+        apiEndpoint = 'http://127.0.0.1:8000/api/chat/tutor/send';
+        apiMessageData = {
+          etudiant_id: messageData.receiverId,
+          message: messageData.content,
+        };
+      } else {
+        apiEndpoint = 'http://127.0.0.1:8000/api/chat/student/send';
+        apiMessageData = {
+          tuteur_id: messageData.receiverId,
+          message: messageData.content,
+        };
+      }
+
+      // Send the message to the server
+      const response = await axios.post(
+        apiEndpoint,
+        apiMessageData,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       // Prepare the message data and endpoint based on sender role
       let apiEndpoint;
       let apiMessageData;
@@ -387,7 +427,15 @@ const chatApiService = {
     const pusher = new Pusher('edc2943b2a2068f8b38c', {
       cluster: 'eu'
     });
+  initializePusher: (userId, userRole, onMessageReceived) => {
+    // Initialize Pusher with your app key
+    const pusher = new Pusher('edc2943b2a2068f8b38c', {
+      cluster: 'eu'
+    });
     
+    // Create a channel name based on the user's role and ID
+    const channelName = `chat.${userId}_${userRole}`;
+    const channel = pusher.subscribe(channelName);
     // Create a channel name based on the user's role and ID
     const channelName = `chat.${userId}_${userRole}`;
     const channel = pusher.subscribe(channelName);
@@ -401,7 +449,19 @@ const chatApiService = {
         }
       }
     });
+    // Bind to the new message event
+    channel.bind('new.message', (data) => {
+      if (data && data.message) {
+        console.log('Received message:', data.message);
+        if (typeof onMessageReceived === 'function') {
+          onMessageReceived(data.message);
+        }
+      }
+    });
     
+    return { pusher, channel };
+  }
+};
     return { pusher, channel };
   }
 };
