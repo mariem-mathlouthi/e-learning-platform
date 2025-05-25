@@ -1166,7 +1166,11 @@ export default {
     },
     async goTo(place) {
       try {
-        this.isLoadingResource = true;
+        if (place === "consult") {
+          this.isLoadingHome = true;
+        }else {
+          this.isLoadingResource = true;
+        }
         const response = await axios.post(
           "http://localhost:8000/api/subscribeToCourse",
           {
@@ -1195,7 +1199,7 @@ export default {
             },
           }
         );
-        if (response.data.success) {
+        if (response.status === 201) {
           if (place === "resource") {
             window.location.href = `/DetailsCours/${this.$route.params.id}`;
           } else if (place === "consult") {

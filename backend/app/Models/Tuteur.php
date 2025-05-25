@@ -18,6 +18,5 @@ class Tuteur extends Authenticatable
         'status' => 'en attente'
     ];
 
-    
 }
 

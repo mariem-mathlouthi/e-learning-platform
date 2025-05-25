@@ -106,6 +106,7 @@ export default {
       },
       isSubmitting: false,
       isLoading: true,
+      tutuerId: null,
       ratingDescriptions: {
         1: 'Mauvais - Pas satisfait',
         2: 'Médiocre - Peu satisfait', 
@@ -119,6 +120,17 @@ export default {
     await this.fetchFeedback();
   },
   methods: {
+
+    async fetchCoursDetails() {
+      const coure = await axios.get(`http://localhost:8000/api/cours/${this.idCours}`)
+        .then(response => {
+          this.tutuerId = response.data.cours.idTuteur;
+        })
+        .catch(error => {
+          console.error("Error fetching course details:", error);
+        });
+    },
+
     async fetchFeedback() {
       try {
         const token = localStorage.getItem('token');
@@ -142,6 +154,26 @@ export default {
       } finally {
         this.isLoading = false;
       }
+    },
+
+    async sendNotification (idEtudiant, idEntreprise, idTuteur ,message, destination, type, date, appointmentId) {
+      const notificationData = {
+        idEtudiant: idEtudiant,
+        idEntreprise: idEntreprise,
+        idTuteur: idTuteur,
+        message: message,
+        destination: destination,
+        type: type,
+        visibility: "shown",
+        date: date,
+        appointmentId: appointmentId,
+      }
+
+      await axios.post(
+        "http://localhost:8000/api/notification",
+        notificationData
+      )
+
     },
     
     async updateFeedback() {
@@ -178,9 +210,10 @@ export default {
         );
 
         if ([200, 201].includes(response.status)) {
+          await this.sendNotification(null, null, this.tutuerId, "Vous avez un modification au feedback", "Tuteur", "cours", new Date(), null)
           toast.success("Votre avis a été mis à jour avec succès!");
           this.$router.push({
-            name: 'ConsultRessource',
+            name: 'Avis',
             params: { id: this.idCours }
           });
         }
@@ -202,6 +235,9 @@ export default {
         this.isSubmitting = false;
       }
     }
+  },
+  mounted() {
+    this.fetchCoursDetails();
   }
 };
 </script>

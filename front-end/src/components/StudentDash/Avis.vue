@@ -36,7 +36,7 @@
         <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
-        Donner votre avis
+        Donner ton feedback
     </router-link>
     </div>
 
@@ -460,6 +460,7 @@ export default {
       loadingReponses: {},
       studentInfo: null,
       tuteurInfo: null,
+      tutuerId: null,
     };
   },
   computed: {
@@ -483,6 +484,37 @@ export default {
     }
   },
   methods: {
+
+    async fetchCoursDetails() {
+      const coure = await axios.get(`http://localhost:8000/api/cours/${this.idCours}`)
+        .then(response => {
+          this.tutuerId = response.data.cours.idTuteur;
+        })
+        .catch(error => {
+          console.error("Error fetching course details:", error);
+        });
+    },
+
+    async sendNotification (idEtudiant, idEntreprise, idTuteur ,message, destination, type, date, appointmentId) {
+      const notificationData = {
+        idEtudiant: idEtudiant,
+        idEntreprise: idEntreprise,
+        idTuteur: idTuteur,
+        message: message,
+        destination: destination,
+        type: type,
+        visibility: "shown",
+        date: date,
+        appointmentId: appointmentId,
+      }
+
+      await axios.post(
+        "http://localhost:8000/api/notification",
+        notificationData
+      )
+
+    },
+
     async checkPaymentStatus() {
       try {
         this.studentInfo = JSON.parse(localStorage.getItem("StudentAccountInfo"));
@@ -510,6 +542,7 @@ export default {
         }
       }
     },
+
     repondreAuFeedback(feedback) {
       // Handle reply action here
       console.log('Replying to feedback:', feedback);
@@ -678,6 +711,7 @@ export default {
         );
         
         if (response.status === 200) {
+          await this.sendNotification(null, null, this.tutuerId, "Vous avez un modification au reponse du feedback", "Tuteur", "cours", new Date(), null)
           toast.success('Réponse modifiée avec succès');
           this.showEditReponseModal = false;
           this.fetchReponses(this.selectedFeedbackId);
@@ -702,7 +736,7 @@ export default {
               data: { user_role: userRole }
             }
           );
-          
+          await this.sendNotification(null, null, this.tutuerId, "Vous avez un suppression au reponse du feedback", "Tuteur", "cours", new Date(), null)
           toast.success('Réponse supprimée avec succès');
           this.activeReponseMenu = null;
           this.fetchReponses(feedbackId);
@@ -727,7 +761,7 @@ export default {
               }
             }
           );
-          
+          await this.sendNotification(null, null, this.tutuerId, "Vous avez un suppression du feedback", "Tuteur", "cours", new Date(), null)
           toast.success('Votre avis a été supprimé avec succès');
           this.fetchAvis();
           this.activeMenu = null;
@@ -795,6 +829,7 @@ export default {
         );
            console.log(response)
         if (response.status === 200) {
+          await this.sendNotification(null, null, this.tutuerId, "Vous avez un reponse au feedback", "Tuteur", "cours", new Date(), null)
           toast.success('Réponse ajoutée avec succès');
           this.showReponseModal = false;
           // window.location.reload(); // Reload the page after adding the reply
@@ -807,6 +842,7 @@ export default {
     },
   },
   mounted() {
+    this.fetchCoursDetails()
     this.checkPaymentStatus();
     this.fetchAvis();
     this.checkUserRole();

@@ -103,6 +103,7 @@ export default {
         commentaire: ""
       },
       isSubmitting: false,
+      tutuerId: null,
       ratingDescriptions: {
         1: 'Mauvais - Pas satisfait',
         2: 'Médiocre - Peu satisfait', 
@@ -113,6 +114,37 @@ export default {
     };
   },
   methods: {
+
+    async fetchCoursDetails() {
+      const coure = await axios.get(`http://localhost:8000/api/cours/${this.idCours}`)
+        .then(response => {
+          this.tutuerId = response.data.cours.idTuteur;
+        })
+        .catch(error => {
+          console.error("Error fetching course details:", error);
+        });
+    },
+
+    async sendNotification (idEtudiant, idEntreprise, idTuteur ,message, destination, type, date, appointmentId) {
+      const notificationData = {
+        idEtudiant: idEtudiant,
+        idEntreprise: idEntreprise,
+        idTuteur: idTuteur,
+        message: message,
+        destination: destination,
+        type: type,
+        visibility: "shown",
+        date: date,
+        appointmentId: appointmentId,
+      }
+
+      await axios.post(
+        "http://localhost:8000/api/notification",
+        notificationData
+      )
+
+    },
+
     async submitFeedback() {
       // Validation
       if (this.form.note === 0) {
@@ -141,6 +173,7 @@ export default {
         );
 
         if ([200, 201].includes(response.status)) {
+          await this.sendNotification(null, null, this.tutuerId, "Votre cours a été noté avec etudiant", "Tuteur", "cours", new Date(), null)
           toast.success("Merci pour votre feedback!");
           this.$router.push({
             name: 'Avis',
@@ -166,6 +199,9 @@ export default {
         this.isSubmitting = false;
       }
     }
+  },
+  mounted() {
+    this.fetchCoursDetails();
   }
 };
 </script>

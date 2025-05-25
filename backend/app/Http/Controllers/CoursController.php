@@ -23,6 +23,35 @@ class CoursController extends Controller
         ], 200);
     }
 
+    public function getAverageFeedback($courseId)
+    {
+        try {
+            $cours = Cours::with('feedbacks')->findOrFail($courseId);
+            $feedbacks = $cours->feedbacks;
+
+            if ($feedbacks->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No feedbacks available for this course'
+                ], 404);
+            }
+
+            $sumOfNotes = $feedbacks->sum('note'); // Assuming 'note' is the column name for feedback score
+            $numberOfFeedbacks = $feedbacks->count();
+            $average = $sumOfNotes / $numberOfFeedbacks;
+
+            return response()->json([
+                'success' => true,
+                'average_feedback' => $average
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Course not found'
+            ], 404);
+        }
+    }
+
     public function getAllCoursesByTuteur(Request $request)
     {
         // Récupérer l'ID du tuteur depuis la requête

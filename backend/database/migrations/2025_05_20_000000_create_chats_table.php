@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tuteur_id')->constrained('tuteurs')->onDelete('cascade');
             $table->foreignId('etudiant_id')->constrained('etudiants')->onDelete('cascade');
-            $table->foreignId('cours_id')->constrained('cours')->onDelete('cascade');
+            // $table->foreignId('cours_id')->constrained('cours')->onDelete('cascade');
             $table->enum('sender_type', ['tuteur', 'etudiant']);
             $table->text('message');
             $table->timestamp('read_at')->nullable();

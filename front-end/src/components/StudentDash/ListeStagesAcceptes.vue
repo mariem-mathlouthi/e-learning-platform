@@ -113,7 +113,7 @@ export default {
         if (response.data.check === true) {
           this.demandes = response.data.demandes;
           for (const demande of this.demandes) {
-            const response2 = await axios.get(`http://localhost:8000/api/offreDetail2/${demande.idOffreDeStage}`);
+            const response2 = await axios.get(`http://localhost:8000/api/offreDetail2/${demande.offre_id}`);
             const response3 = await axios.get(`http://localhost:8000/api/getEntreprise/${response2.data.offre.idEntreprise}`);
             let myobject = {
               title: response2.data.offre.titre,

@@ -197,9 +197,6 @@ const chatApiService = {
     }
   },
 
-  /**
-   * Get chat history between two users
-   */
   getChatHistory: async (currentUserId, currentUserRole, partnerId, partnerRole) => {
     try {
       let authToken;
@@ -237,10 +234,12 @@ const chatApiService = {
             success: true,
             messages: response.data.data.map(msg => ({
               id: msg.id,
-              content: msg.message,
-              sender_id: msg.sender_type === 'tuteur' ? msg.tuteur_id : msg.etudiant_id,
-              receiver_id: msg.sender_type === 'tuteur' ? msg.etudiant_id : msg.tuteur_id,
-              created_at: msg.created_at
+              tuteur_id: msg.tuteur_id,
+              etudiant_id: msg.etudiant_id,
+              message: msg.message,
+              read_at: msg.read_at,
+              created_at: msg.created_at,
+              sender_type: msg.sender_type
             }))
           }
         };
@@ -263,106 +262,148 @@ const chatApiService = {
         }
       };
     }
+  },
+  
+
+  /**
+   * Get unread messages count for the current user
+   */
+  getUnreadCount: async (token, role) => {
+    try {
+      if (!token) {
+        console.error('Authentication token not found for getUnreadCount.');
+        return { data: { success: false, unread_count: 0, message: 'Authentication token not found.' } };
+      }
+      const response = await axios.post('http://127.0.0.1:8000/api/chat/unread-count',
+        { role }, // Send role in the body
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      if (response.data && response.data.success) {
+        return { data: { success: true, unread_count: response.data.unread_count } };
+      } else {
+        console.error('Failed to fetch unread count:', response.data.message || 'Unknown error');
+        return { data: { success: false, unread_count: 0, message: response.data.message || 'Failed to fetch unread count' } };
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error.response ? error.response.data : error.message);
+      return { data: { success: false, unread_count: 0, message: error.response ? error.response.data.message : 'Error fetching unread count' } };
+    }
+  },
+
+  sendMessage: async (messageData) => {
+    try {
+      // Get the appropriate token based on user role
+      let authToken;
+      if (messageData.senderRole === 'tuteur') {
+        const tuteurInfo = JSON.parse(localStorage.getItem('TuteurAccountInfo'));
+        authToken = tuteurInfo ? tuteurInfo.token : null;
+      } else {
+        const studentInfo = JSON.parse(localStorage.getItem('StudentAccountInfo'));
+        authToken = studentInfo ? studentInfo.token : null;
+      }
+
+      if (!authToken) {
+        console.error('Authentication token not found.');
+        return {
+          data: {
+            success: false,
+            message: 'Authentication token not found.'
+          }
+        };
+      }
+
+      // Prepare the message data and endpoint based on sender role
+      let apiEndpoint;
+      let apiMessageData;
+
+      if (messageData.senderRole === 'tuteur') {
+        apiEndpoint = 'http://127.0.0.1:8000/api/chat/tutor/send';
+        apiMessageData = {
+          etudiant_id: messageData.receiverId,
+          message: messageData.content,
+        };
+      } else {
+        apiEndpoint = 'http://127.0.0.1:8000/api/chat/student/send';
+        apiMessageData = {
+          tuteur_id: messageData.receiverId,
+          message: messageData.content,
+        };
+      }
+
+      // Send the message to the server
+      const response = await axios.post(
+        apiEndpoint,
+        apiMessageData,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.success) {
+        return {
+          data: {
+            success: true,
+            message: 'Message sent successfully',
+            messageData: {
+              id: response.data.message.id,
+              tuteur_id: response.data.message.tuteur_id,
+              etudiant_id: response.data.message.etudiant_id,
+              message: response.data.message.message,
+              read_at: response.data.message.read_at,
+              created_at: response.data.message.created_at,
+              sender_type: response.data.message.sender_type
+            }
+          }
+        };
+      } else {
+        console.error('Failed to send message:', response.data.message || 'Unknown error');
+        return {
+          data: {
+            success: false,
+            message: response.data.message || 'Failed to send message'
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Error sending message:', error.response ? error.response.data : error.message);
+      return {
+        data: {
+          success: false,
+          message: error.response ? error.response.data.message : 'Error sending message'
+        }
+      };
+    }
+  },
+
+  initializePusher: (userId, userRole, onMessageReceived) => {
+    // Initialize Pusher with your app key
+    const pusher = new Pusher('edc2943b2a2068f8b38c', {
+      cluster: 'eu'
+    });
+    
+    // Create a channel name based on the user's role and ID
+    const channelName = `chat.${userId}_${userRole}`;
+    const channel = pusher.subscribe(channelName);
+    
+    // Bind to the new message event
+    channel.bind('new.message', (data) => {
+      if (data && data.message) {
+        console.log('Received message:', data.message);
+        if (typeof onMessageReceived === 'function') {
+          onMessageReceived(data.message);
+        }
+      }
+    });
+    
+    return { pusher, channel };
   }
-  };
-
-  /**
-   * Send a new message
-   */
-  // sendMessage: async (messageData) => {
-  //   try {
-  //     // Get the appropriate token based on user role
-  //     let authToken;
-  //     if (messageData.senderRole === 'tuteur') {
-  //       const tuteurInfo = JSON.parse(localStorage.getItem('TuteurAccountInfo'));
-  //       authToken = tuteurInfo ? tuteurInfo.token : null;
-  //     } else {
-  //       const studentInfo = JSON.parse(localStorage.getItem('StudentAccountInfo'));
-  //       authToken = studentInfo ? studentInfo.token : null;
-  //     }
-
-  //     if (!authToken) {
-  //       console.error('Authentication token not found.');
-  //       return {
-  //         data: {
-  //           success: false,
-  //           message: 'Authentication token not found.'
-  //         }
-  //       };
-  //     }
-
-  //     // Prepare the message data for the API
-  //     const apiMessageData = {
-  //       message: messageData.content,
-  //       receiver_id: messageData.receiverId,
-  //       sender_type: messageData.senderRole === 'tuteur' ? 'tuteur' : 'etudiant'
-  //     };
-
-  //     // Send the message to the server
-  //     const response = await axios.post(
-  //       'http://localhost:8000/api/chat/send',
-  //       apiMessageData,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${authToken}`,
-  //           'Content-Type': 'application/json'
-  //         }
-  //       }
-  //     );
-
-  //     if (response.data && response.data.success) {
-  //       return {
-  //         data: {
-  //           success: true,
-  //           message: 'Message sent successfully',
-  //           messageData: response.data.message
-  //         }
-  //       };
-  //     } else {
-  //       console.error('Failed to send message:', response.data.message || 'Unknown error');
-  //       return {
-  //         data: {
-  //           success: false,
-  //           message: response.data.message || 'Failed to send message'
-  //         }
-  //       };
-  //     }
-  //   } catch (error) {
-  //     console.error('Error sending message:', error.response ? error.response.data : error.message);
-  //     return {
-  //       data: {
-  //         success: false,
-  //         message: error.response ? error.response.data.message : 'Error sending message'
-  //       }
-  //     };
-  //   }
-  // },
-
-  /**
-   * Initialize Pusher for real-time messaging
-   */
-  // initializePusher: (userId, userRole, onMessageReceived) => {
-  //   // Initialize Pusher with your app key
-  //   const pusher = new Pusher('edc2943b2a2068f8b38c', {
-  //     cluster: 'eu'
-  //   });
-    
-  //   // Create a channel name based on the user's role and ID
-  //   const channelName = `chat.${userId}_${userRole}`;
-  //   const channel = pusher.subscribe(channelName);
-    
-  //   // Bind to the new message event
-  //   channel.bind('new.message', (data) => {
-  //     if (data && data.message) {
-  //       console.log('Received message:', data.message);
-  //       if (typeof onMessageReceived === 'function') {
-  //         onMessageReceived(data.message);
-  //       }
-  //     }
-  //   });
-    
-  //   return { pusher, channel };
-  // }
-
+};
 
 export default chatApiService;

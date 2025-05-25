@@ -189,7 +189,12 @@ public function getAllOffres(Request $request,$idEntreprise){
 
     public function AllOffres()
     {
-        $offres = Offre::all();
+        // $offres = Offre::all();
+        $offres = Offre::where(function($query) {
+            $query->whereHas('demandes', function($subQuery) {
+                $subQuery->whereIn('status', ['en attente', 'rejeté']);
+            })->orDoesntHave('demandes');
+        })->get();
         return response()->json([
             'offres' => $offres,
             'message' => 'Offers  fetched successfully',

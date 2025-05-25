@@ -54,60 +54,78 @@
           </div>
 
           <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Carte de cours premium -->
+            <!-- Carte de cours premium redesigned -->
             <article 
               v-for="cours in filteredCours" 
               :key="cours.id"
-              class="group relative bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden isolate"
+              class="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden isolate flex flex-col h-full border border-gray-100"
             >
-              <!-- Effet de halo au survol -->
-              <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+              <!-- Effet de halo au survol amélioré -->
+              <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
               
-              <!-- Image avec effet parallaxe -->
-              <div class="relative h-64 overflow-hidden transform perspective-1000">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent z-10"></div>
-                <div class="absolute inset-0 group-hover:scale-[1.02] transition-transform duration-700 will-change-transform">
+              <!-- Badge de prix repositionné -->
+              <div class="absolute top-4 right-4 z-30">
+                <span class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 backdrop-blur-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  {{ cours.prix?.toFixed(2) || 'Gratuit' }} €
+                </span>
+              </div>
+              
+              <!-- Image avec effet parallaxe amélioré -->
+              <div class="relative h-56 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent z-10"></div>
+                <div class="absolute inset-0 group-hover:scale-110 transition-transform duration-700 ease-in-out will-change-transform">
                   <img 
                     :src="'http://localhost:8000' + cours.file" 
                     :alt="cours.titre"
-                    class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+                    class="w-full h-full object-cover"
                     @error="handleImageError"
                   />
                 </div>
-                <div class="absolute bottom-4 right-4 z-20">
-                  <span class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-shadow duration-300 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    {{ cours.prix?.toFixed(2) || 'Gratuit' }} €
-                  </span>
-                </div>
               </div>
 
-              <!-- Contenu avec effet de dégradé textuel -->
-              <div class="p-6 space-y-5 bg-gradient-to-b from-white via-white to-white/90">
-                <h3 class="text-2xl font-bold text-gray-800 leading-tight pr-4 transition-colors duration-300 group-hover:text-indigo-600">
-                  {{ cours.titre }}
-                </h3>
-
-                <div class="flex space-x-3">
+              <!-- Contenu avec design amélioré -->
+              <div class="p-6 space-y-4 flex-grow flex flex-col justify-between bg-white">
+                <div>
+                  <h3 class="text-xl font-bold text-gray-800 leading-tight transition-colors duration-300 group-hover:text-indigo-600 line-clamp-2">
+                    {{ cours.titre }}
+                  </h3>
+                  
+                  <!-- Indicateur de notation amélioré -->
+                  <div class="mt-2 flex items-center">
+                    <div class="flex items-center gap-1">
+                      <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                      </svg>
+                      <span class="text-sm font-medium text-gray-700">{{ averageFeedbacks[cours.id]?.toFixed(1) || '0.0' }}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Boutons d'action redesigned -->
+                <div class="flex space-x-3 pt-3 mt-auto">
                   <router-link 
                     :to="`/DetailCour/${cours.id}`"
-                    class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-300 group/button"
+                    class="flex-1 flex justify-center items-center px-4 py-2.5 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-semibold hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white transition-all duration-300 border border-indigo-100 hover:border-transparent"
                   >
-                    <span @click="voirPlus" >Voir plus</span>
-                    <svg class="w-4 h-4 ml-2 transform group-hover/button:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                    </svg>
+                    <span @click="voirPlus" class="inline-flex items-center">
+                      <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      </svg>
+                      Voir plus
+                    </span>
                   </router-link>
                   <router-link 
                     :to="`/Avis/${cours.id}`"
-                    class="feedback-btn feedback-btn-primary hover:scale-[1.02] transition-all duration-300"
+                    class="flex-1 flex justify-center items-center px-4 py-2.5 bg-purple-50 text-purple-700 rounded-xl text-sm font-semibold hover:bg-gradient-to-r hover:from-purple-600 hover:to-indigo-600 hover:text-white transition-all duration-300 border border-purple-100 hover:border-transparent"
                   > 
-                    <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+                    <svg class="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /> 
                     </svg> 
-                    Voir les Avis 
+                    Avis
                   </router-link>
                 </div>
               </div>
@@ -133,7 +151,8 @@ export default {
       loading: true,
       error: null,
       defaultImage: '/placeholder-course.jpg',
-      showAvis: false
+      showAvis: false,
+      averageFeedbacks: {}
     };
   },
   components: { NavBarStd, Sidebar },
@@ -150,6 +169,20 @@ export default {
             titre: c.titre,
             prix: c.prix ? parseFloat(c.prix) : 0.00,
             file: c.file || this.defaultImage
+          }));
+          
+          // Fetch average feedback for each course
+          await Promise.all(this.cours.map(async (course) => {
+            try {
+              const feedbackResponse = await axios.get(`http://127.0.0.1:8000/api/average-feedback/${course.id}`);
+              if (feedbackResponse.data.success) {
+                this.averageFeedbacks[course.id] = feedbackResponse.data.average_feedback || 0;
+              }
+            } catch (error) {
+              console.error(`Error fetching feedback for course ${course.id}:`, error);
+              this.averageFeedbacks[course.id] = 0;
+            }
+          
           }));
           this.filteredCours = this.cours;
         }
@@ -191,6 +224,11 @@ export default {
   100% { transform: translateX(100%); }
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
 .animate-pulse-slow {
   animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -206,6 +244,10 @@ export default {
   background-size: 200% 100%;
 }
 
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
 .perspective-1000 {
   perspective: 1000px;
 }
@@ -213,6 +255,14 @@ export default {
 .group:hover .perspective-1000 {
   transform: rotateX(2deg) rotateY(2deg);
   transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Line clamp for truncating text */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .feedback-btn {

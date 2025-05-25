@@ -105,7 +105,7 @@ export default {
           this.demandeId = demande.id;
           this.statut = demande.statut;
           this.cv = demande.cv;
-          const responseOffre = await axios.get(`http://localhost:8000/api/offreDetail2/${demande.idOffreDeStage}`);
+          const responseOffre = await axios.get(`http://localhost:8000/api/offreDetail2/${demande.offre_id}`);
           this.offreDeStage = responseOffre.data.offre.titre;
           const responseEtudiant = await axios.get(`http://localhost:8000/api/getStudentDetail/${demande.idEtudiant}`);
           const student = responseEtudiant.data.student;

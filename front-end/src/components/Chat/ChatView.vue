@@ -20,9 +20,9 @@
         @close="closeNotification"
       />
       
-      <div class="grid grid-cols-12 gap-4">
+      <div class="grid grid-cols-12 gap-6 h-full">
         <!-- Chat List Section -->
-        <div class="col-span-12 md:col-span-4">
+        <div class="col-span-12 md:col-span-4 lg:col-span-3">
           <ChatList 
             :currentUserId="currentUserId" 
             :currentUserRole="currentUserRole"
@@ -31,7 +31,7 @@
         </div>
         
         <!-- Chat Component Section -->
-        <div class="col-span-12 md:col-span-8">
+        <div class="col-span-12 md:col-span-8 lg:col-span-9">
           <div v-if="selectedContact" class="h-full">
             <ChatComponent 
               :chatPartner="selectedContact"
@@ -43,13 +43,24 @@
               @error="handleError"
             />
           </div>
-          <div v-else class="h-full flex items-center justify-center bg-white rounded-lg shadow-md p-8">
-            <div class="text-center text-gray-500">
-              <svg class="w-20 h-20 mx-auto text-purple-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-              </svg>
-              <h3 class="text-xl font-semibold mb-2">Aucune conversation sélectionnée</h3>
-              <p>Sélectionnez un contact pour commencer à discuter</p>
+          <div v-else class="h-full flex items-center justify-center bg-white rounded-2xl shadow-2xl border border-gray-100 p-12">
+            <div class="text-center text-gray-500 max-w-md">
+              <div class="bg-gray-50 rounded-full p-8 w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+                <svg class="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold text-gray-800 mb-3">Bienvenue dans vos Messages</h3>
+              <p class="text-gray-500 text-lg mb-6">Sélectionnez une conversation pour commencer à discuter</p>
+              <div class="flex items-center justify-center space-x-4 text-sm text-gray-400">
+                <!-- Removed online status indicator -->
+                <div class="flex items-center space-x-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                  </svg>
+                  <span>Messages chiffrés</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -108,11 +119,11 @@ export default {
       if (this.userRole === 'student') {
         const studentInfo = JSON.parse(localStorage.getItem('StudentAccountInfo'));
         this.currentUserId = studentInfo.id;
-        this.currentUserRole = 'student';
+        this.currentUserRole = 'etudiant';
       } else if (this.userRole === 'tutor') {
         const tuteurInfo = JSON.parse(localStorage.getItem('TuteurAccountInfo'));
         this.currentUserId = tuteurInfo.id;
-        this.currentUserRole = 'tutor';
+        this.currentUserRole = 'tuteur';
       }
     },
 

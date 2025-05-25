@@ -14,7 +14,6 @@ class Chat extends Model
         'etudiant_id',
         'message',
         'read_at',
-        'cours_id',
         'sender_type'
     ];
 

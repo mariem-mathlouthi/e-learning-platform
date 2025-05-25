@@ -1,36 +1,46 @@
 <template>
-  <div class="chat-list-container bg-white rounded-lg shadow-md overflow-hidden">
+  <div class="chat-list-container bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col h-full" style="height: calc(100vh - 100px);">
     <!-- Header -->
-    <div class="chat-list-header bg-purple-600 text-white p-4">
-      <h2 class="font-bold text-xl">Conversations</h2>
+    <div class="chat-list-header bg-white border-b border-gray-100 p-6">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-2xl text-gray-900">Messages</h2>
+        <button class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Search -->
-    <div class="p-3 border-b">
+    <div class="p-4 border-b border-gray-100">
       <div class="relative">
         <input 
           type="text" 
           v-model="searchQuery" 
-          placeholder="Rechercher..." 
-          class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+          placeholder="Rechercher des conversations..." 
+          class="w-full pl-12 pr-4 py-3 bg-gray-100 border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200 text-sm placeholder-gray-500"
         />
-        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
       </div>
     </div>
 
     <!-- Contact List -->
-    <div class="chat-contacts overflow-y-auto" style="max-height: 400px;">
-      <div v-if="loading" class="flex justify-center items-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
+    <div class="chat-contacts overflow-y-auto flex-grow">
+      <div v-if="loading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
       </div>
       
-      <div v-else-if="filteredContacts.length === 0" class="text-center text-gray-500 py-8">
-        <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-        </svg>
-        <p>Aucun contact disponible</p>
+      <div v-else-if="filteredContacts.length === 0" class="text-center text-gray-500 py-12">
+        <div class="bg-gray-100 rounded-full p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+        <p class="font-medium text-gray-600">Aucun contact disponible</p>
+        <p class="text-sm text-gray-400 mt-1">Vos conversations apparaîtront ici</p>
       </div>
       
       <div v-else>
@@ -38,19 +48,30 @@
           v-for="contact in filteredContacts" 
           :key="contact.id"
           @click="selectContact(contact)"
-          class="chat-contact p-3 border-b hover:bg-purple-50 cursor-pointer transition-colors duration-200"
-          :class="{'bg-purple-100': selectedContactId === contact.id}"
+          class="chat-contact px-4 py-4 hover:bg-gray-50 cursor-pointer transition-all duration-200 border-b border-gray-50 last:border-b-0"
+          :class="{'bg-blue-50 border-blue-100': selectedContactId === contact.id}"
         >
-          <div class="flex items-center">
-            <div class="w-10 h-10 rounded-full bg-purple-300 flex items-center justify-center mr-3">
-              <span class="text-purple-700 font-bold">{{ getInitials(contact.name) }}</span>
+          <div class="flex items-center space-x-3">
+            <!-- Avatar -->
+            <div class="relative flex-shrink-0">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-md">
+                <span class="text-white font-semibold text-sm">{{ getInitials(contact.name) }}</span>
+              </div>
+              <!-- Removed green circle indicator -->
             </div>
-            <div class="flex-grow">
-              <h3 class="font-medium text-gray-800">{{ contact.name }}</h3>
-              <p class="text-sm text-gray-500 truncate">{{ contact.lastMessage || 'Commencer une conversation' }}</p>
-            </div>
-            <div v-if="contact.unreadCount" class="bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {{ contact.unreadCount }}
+            
+            <!-- Contact info -->
+            <div class="flex-grow min-w-0">
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="font-semibold text-gray-900 truncate">{{ contact.name }}</h3>
+                <span class="text-xs text-gray-400 flex-shrink-0 ml-2">12:30</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-500 truncate flex-grow">{{ contact.lastMessage || 'Commencer une conversation' }}</p>
+                <div v-if="contact.unreadCount" class="bg-blue-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 ml-2 flex-shrink-0">
+                  {{ contact.unreadCount > 99 ? '99+' : contact.unreadCount }}
+                </div>
+              </div>
             </div>
           </div>
         </div>

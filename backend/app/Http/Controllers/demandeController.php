@@ -27,7 +27,7 @@ class demandeController extends Controller
         // Create a new Demande instance
         $new = new Demande();
         $new->idEtudiant = $requestData['idEtudiant'];
-        $new->idOffreDeStage = $requestData['idOffreDeStage'];
+        $new->offre_id = $requestData['offre_id'];
         $new->statut = $requestData['statut'];
         $new->DateSoumission = date('Y-m-d', strtotime($requestData['DateSoumission']));
         $new->cv = $url; // Save the URL in the database
@@ -80,7 +80,7 @@ public function getDemandeById(Request $request,$id){
 
 public function getDemandeByOfferId(Request $request,$offerId){
     // Fetch all offers
-    $demandes = Demande::where('idOffreDeStage', $offerId)->get();
+    $demandes = Demande::where('offre_id', $offerId)->get();
     return response()->json([
         'demandes' => $demandes,
         'message' => 'demandes fetched successfully',

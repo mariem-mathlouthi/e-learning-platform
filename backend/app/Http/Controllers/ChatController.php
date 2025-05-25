@@ -15,12 +15,10 @@ class ChatController extends Controller
         $request->validate([
             'tuteur_id' => 'required|exists:tuteurs,id',
             'message' => 'required|string',
-            'cours_id' => 'required|exists:cours,id'
         ]);
 
-        // Verify that the student is connected to the tutor through the course subscription
-        $subscription = CoursSubscriptions::where('cours_id', $request->cours_id)
-            ->where('etudiant_id', Auth::id())
+        // Verify that the student is connected to the tutor through any course subscription
+        $subscription = CoursSubscriptions::where('etudiant_id', Auth::id())
             ->where('tuteur_id', $request->tuteur_id)
             ->first();
 
@@ -35,7 +33,7 @@ class ChatController extends Controller
             'etudiant_id' => Auth::id(),
             'tuteur_id' => $request->tuteur_id,
             'message' => $request->message,
-            'cours_id' => $request->cours_id,
+            // 'cours_id' => $subscription->cours_id, // Use the first available course subscription
             'sender_type' => 'etudiant'
         ]);
 
@@ -53,20 +51,18 @@ class ChatController extends Controller
     {
         $request->validate([
             'etudiant_id' => 'required|exists:etudiants,id',
-            'message' => 'required|string',
-            'cours_id' => 'required|exists:cours,id'
+            'message' => 'required|string'
         ]);
 
-        // Verify that the tutor is connected to the student through the course subscription
-        $subscription = CoursSubscriptions::where('cours_id', $request->cours_id)
-            ->where('tuteur_id', Auth::id())
+        // Verify that the tutor is connected to the student through any course subscription
+        $subscription = CoursSubscriptions::where('tuteur_id', Auth::id())
             ->where('etudiant_id', $request->etudiant_id)
             ->first();
 
         if (!$subscription) {
             return response()->json([
                 'success' => false,
-                'message' => 'You can only chat with students enrolled in your course'
+                'message' => 'You can only chat with students enrolled in your courses'
             ], 403);
         }
 
@@ -74,7 +70,7 @@ class ChatController extends Controller
             'tuteur_id' => Auth::id(),
             'etudiant_id' => $request->etudiant_id,
             'message' => $request->message,
-            'cours_id' => $request->cours_id,
+            // 'cours_id' => $subscription->cours_id, // Use the first available course subscription
             'sender_type' => 'tuteur'
         ]);
 
@@ -90,22 +86,19 @@ class ChatController extends Controller
 
     public function getStudentMessages(Request $request, $tutor_id)
     {
-        // Verify that the student is connected to the tutor through course subscriptions
-        $subscriptions = CoursSubscriptions::where('etudiant_id', Auth::id())
+        // Verify that the student is connected to the tutor through any course subscription
+        $subscription = CoursSubscriptions::where('etudiant_id', Auth::id())
             ->where('tuteur_id', $tutor_id)
-            ->get();
+            ->first();
 
-        if ($subscriptions->isEmpty()) {
+        if (!$subscription) {
             return response()->json([
                 'success' => false,
                 'message' => 'You can only view messages with tutors you are subscribed to'
             ], 403);
         }
 
-        $coursIds = $subscriptions->pluck('cours_id');
-
-        $messages = Chat::whereIn('cours_id', $coursIds)
-            ->where(function($query) use ($tutor_id) {
+        $messages = Chat::where(function($query) use ($tutor_id) {
                 $query->where(function($q) use ($tutor_id) {
                     $q->where('etudiant_id', Auth::id())
                       ->where('tuteur_id', $tutor_id);
@@ -126,21 +119,18 @@ class ChatController extends Controller
     public function getTutorMessages(Request $request, $student_id)
     {
         // Verify that the tutor is connected to the student through course subscriptions
-        $subscriptions = CoursSubscriptions::where('tuteur_id', Auth::id())
+        $subscription = CoursSubscriptions::where('tuteur_id', Auth::id())
             ->where('etudiant_id', $student_id)
-            ->get();
+            ->first();
 
-        if ($subscriptions->isEmpty()) {
+        if (!$subscription) {
             return response()->json([
                 'success' => false,
                 'message' => 'You can only view messages with students enrolled in your courses'
             ], 403);
         }
 
-        $coursIds = $subscriptions->pluck('cours_id');
-
-        $messages = Chat::whereIn('cours_id', $coursIds)
-            ->where(function($query) use ($student_id) {
+        $messages = Chat::where(function($query) use ($student_id) {
                 $query->where(function($q) use ($student_id) {
                     $q->where('tuteur_id', Auth::id())
                       ->where('etudiant_id', $student_id);

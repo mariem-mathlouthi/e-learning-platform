@@ -132,7 +132,7 @@
        //console.log(response3.data);
         let formData = new FormData();
         formData.append('idEtudiant', this.idEtudiant);
-        formData.append('idOffreDeStage', this.idOffreDeStage);
+        formData.append('offre_id', this.idOffreDeStage);
         formData.append('statut', this.statut);
         formData.append('DateSoumission', this.DateSoumission);
         formData.append('cv', this.cv);

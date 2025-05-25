@@ -170,7 +170,7 @@ export default {
                 const myObject = {
                   idEtudiant: student.id,
                   fullname: student.fullname,
-                  offerId: demande.idOffreDeStage,
+                  offerId: demande.offre_id,
                   typeStage: student.typeStage,
                   statut: demande.statut,
                   demandeId: demande.id,

@@ -108,7 +108,7 @@ Cancel
           const response = await axios.post(`http://localhost:8000/api/updateSatutDemande/${this.demandeId}`,myObject);
           const response2 = await axios.get(`http://localhost:8000/api/getDemandeById/${this.demandeId}`);
           const response3 = await axios.get(`http://localhost:8000/api/getStudentDetail/${response2.data.demande[0].idEtudiant}`);
-          const response4 = await axios.get(`http://localhost:8000/api/offreDetail2/${response2.data.demande[0].idOffreDeStage}`);
+          const response4 = await axios.get(`http://localhost:8000/api/offreDetail2/${response2.data.demande[0].offre_id}`);
           console.log(response3.data);
           console.log(response4.data);
         
