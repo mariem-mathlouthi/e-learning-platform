@@ -145,28 +145,44 @@ export default {
   methods: {
     initializePusher() {
       const { pusher, channel } = chatApiService.initializePusher(
-        this.currentUserId, 
+        this.currentUserId,
         this.currentUserRole,
-        this.currentUserRole,
-        (message) => {
-          // Only add the message if it's not from the current user
-          // This prevents duplicate messages since we already add them optimistically
-          if (message.sender_type !== this.currentUserId) {
-          if (message.sender_type !== this.currentUserId) {
+        (pusherData) => {
+
+          // pusherData is the object like: {"id":39,"etudiant_id":2,"tuteur_id":1,"message":"bhi", ... ,"sender_type":"tuteur"}
+          if (pusherData && pusherData.sender_type && pusherData.sender_type !== this.currentUserRole) {
+            // Determine senderId based on sender_type
+            let senderId;
+            if (pusherData.sender_type === 'etudiant') {
+              senderId = pusherData.etudiant_id;
+            } else if (pusherData.sender_type === 'tuteur') {
+              senderId = pusherData.tuteur_id;
+            }
+
             this.messages.push({
-              content: message.message,
-              content: message.message,
-              senderId: message.senderId,
-              timestamp: new Date(message.timestamp)
+              id: pusherData.id, // Use the ID from Pusher data
+              content: pusherData.message,
+              senderId: senderId,
+              sender_type: pusherData.sender_type,
+              timestamp: new Date(pusherData.created_at),
+              read_at: pusherData.read_at ? new Date(pusherData.read_at) : null
             });
-            
-            // Emit notification event if the chat is not currently focused
+
+            // If the received message is for the currently active chat, mark it as read immediately
+            if (this.chatPartner && 
+                ((pusherData.sender_type === 'etudiant' && pusherData.etudiant_id === this.chatPartner.id) || 
+                 (pusherData.sender_type === 'tuteur' && pusherData.tuteur_id === this.chatPartner.id))) {
+                this.markMessagesAsRead(); // This will also reset unreadMessagesCount if applicable
+            } else {
+                // If it's for another chat, increment unread count for that chat (if needed elsewhere or for notifications)
+                // For now, just focus on the current chat. Future enhancement: update global unread counts.
+            }
+
             if (!document.hasFocus()) {
               this.$emit('new-message', {
-                title: `Nouveau message de ${this.chatPartner.name}`,
-                message: message.message,
-                message: message.message,
-                timestamp: message.timestamp
+                title: `Nouveau message de ${pusherData.sender_type === 'tuteur' ? 'Tuteur' : 'Étudiant'}`, // Or fetch sender name if available
+                message: pusherData.message,
+                timestamp: pusherData.created_at
               });
             }
           }
@@ -183,10 +199,13 @@ export default {
         // Fetch unread messages count
         const token = localStorage.getItem('token'); // Or however you store/retrieve the token
         const unreadCountResponse = await chatApiService.getUnreadCount(token, this.currentUserRole);
-        if (unreadCountResponse.data.success) {
-          this.unreadMessagesCount = unreadCountResponse.data.unread_count;
+        if (unreadCountResponse.data.success && unreadCountResponse.data.unread_by_user) {
+          const partnerUnreadInfo = unreadCountResponse.data.unread_by_user.find(
+            u => u.user && u.user.id === this.chatPartner.id
+          );
+          this.unreadMessagesCount = partnerUnreadInfo ? partnerUnreadInfo.unread_count : 0;
         } else {
-          console.error('Failed to fetch unread count:', unreadCountResponse.data.message);
+          console.error('Failed to fetch unread count or unread_by_user is missing:', unreadCountResponse.data.message);
           this.unreadMessagesCount = 0; // Default to 0 on error
         }
 
@@ -199,10 +218,9 @@ export default {
         
         if (response.data.success) {
           this.messages = response.data.messages.map(msg => ({
-            content: msg.message,
-            content: msg.message,
-            senderId: msg.sender_id,
-            sender_type: msg.sender_type,
+            content: msg.message, // Removed duplicate content property
+            senderId: msg.sender_id, // Or etudiant_id/tuteur_id depending on API response structure
+            sender_type: msg.sender_type, // This should be 'tutor' or 'student' from API
             timestamp: new Date(msg.created_at),
             read_at: msg.read_at ? new Date(msg.read_at) : null 
           }));
@@ -236,6 +254,7 @@ export default {
       this.messages.push({
         content: messageContent,
         senderId: this.currentUserId,
+        sender_type: this.currentUserRole, // Add sender_type for correct UI rendering
         timestamp: new Date()
       });
       
@@ -302,7 +321,7 @@ export default {
         this.firstUnreadMessageIndex = -1; // No unread messages
       }
 
-      // If unread messages exist, scroll to the separator
+      // If unread messages exist, scroll to the separator and mark messages as read
       if (this.firstUnreadMessageIndex !== -1) {
         this.$nextTick(() => {
           const unreadSeparator = this.$refs.messageContainer.querySelector('.unread-separator');
@@ -314,7 +333,64 @@ export default {
               messageElements[this.firstUnreadMessageIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
           }
+          
+          // Mark unread messages as read after displaying the separator
+          this.markMessagesAsRead();
         });
+      }
+    },
+    
+    /**
+     * Mark unread messages as read using the API
+     */
+    async markMessagesAsRead() {
+      if (this.unreadMessagesCount <= 0 || this.firstUnreadMessageIndex === -1) {
+        return; // No unread messages to mark
+      }
+      
+      try {
+        // Get the token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('Authentication token not found for marking messages as read.');
+          return;
+        }
+        
+        // Get the IDs of unread messages
+        const unreadMessageIds = [];
+        for (let i = this.firstUnreadMessageIndex; i < this.messages.length; i++) {
+          // Only include messages that don't have a read_at value
+          if (this.messages[i] && this.messages[i].id && !this.messages[i].read_at) {
+            unreadMessageIds.push(this.messages[i].id);
+          }
+        }
+        
+        if (unreadMessageIds.length === 0) {
+          console.log('No unread message IDs found to mark as read.');
+          return;
+        }
+        
+        // Call the API to mark messages as read
+        const response = await chatApiService.markMessagesAsRead(token, unreadMessageIds);
+        
+        if (response.data && response.data.success) {
+          console.log('Messages marked as read successfully:', unreadMessageIds);
+          
+          // Update the local messages to reflect they've been read
+          unreadMessageIds.forEach(id => {
+            const messageIndex = this.messages.findIndex(msg => msg.id === id);
+            if (messageIndex !== -1) {
+              this.messages[messageIndex].read_at = new Date();
+            }
+          });
+          
+          // Reset unread count since we've marked all as read
+          this.unreadMessagesCount = 0;
+        } else {
+          console.error('Failed to mark messages as read:', response.data.message);
+        }
+      } catch (error) {
+        console.error('Error in markMessagesAsRead:', error);
       }
     },
 

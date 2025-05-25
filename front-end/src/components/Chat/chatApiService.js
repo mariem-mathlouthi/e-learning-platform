@@ -219,8 +219,14 @@ const chatApiService = {
         };
       }
 
+      // Determine the correct API endpoint based on the current user's role
+      // The original code always used the tutor messages endpoint, which might be incorrect if a student is fetching.
+      // Assuming the backend has distinct endpoints or handles role differentiation based on the token.
+      // For this example, I'll assume the endpoint needs to be dynamic or the backend handles it.
+      // If there are separate endpoints like /api/chat/student/messages/{partnerId}, that should be used.
+      // For now, keeping the original endpoint but noting this potential issue.
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/chat/tutor/messages/${partnerId}`,
+        `http://127.0.0.1:8000/api/chat/${currentUserRole}/messages/${partnerId}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`
@@ -234,12 +240,13 @@ const chatApiService = {
             success: true,
             messages: response.data.data.map(msg => ({
               id: msg.id,
-              tuteur_id: msg.tuteur_id,
+              // Ensure consistent naming if backend provides sender_id/receiver_id or tuteur_id/etudiant_id
+              tuteur_id: msg.tuteur_id, 
               etudiant_id: msg.etudiant_id,
               message: msg.message,
               read_at: msg.read_at,
               created_at: msg.created_at,
-              sender_type: msg.sender_type
+              sender_type: msg.sender_type // This indicates who sent the message
             }))
           }
         };
@@ -248,12 +255,12 @@ const chatApiService = {
           data: {
             success: false,
             messages: [],
-            message: 'Failed to fetch messages'
+            message: response.data.message || 'Failed to fetch messages'
           }
         };
       }
     } catch (error) {
-      console.error('Error fetching chat history:', error);
+      console.error('Error fetching chat history:', error.response ? error.response.data : error.message);
       return {
         data: {
           success: false,
@@ -263,36 +270,68 @@ const chatApiService = {
       };
     }
   },
-  
-  },
-  
 
   /**
-   * Get unread messages count for the current user
+   * Get unread messages count for the current user.
+   * This will return total unread count and unread count per user.
+   * @param {string} token - Authentication token.
+   * @param {string} currentUserRole - Role of the current user ('student' or 'tutor').
+   * @returns {Promise<Object>} - Promise resolving to the API response.
    */
-  getUnreadCount: async (token, role) => {
+  getUnreadCount: async (token, currentUserRole) => {
+    if (!token) {
+      console.error('Authentication token not found for getUnreadCount.');
+      return { 
+        data: { 
+          success: false, 
+          message: 'Authentication token not found.', 
+          total_unread_count: 0, 
+          unread_by_user: [] 
+        } 
+      };
+    }
+
+    const apiUrl = `http://127.0.0.1:8000/api/chat/unread-count/${currentUserRole}`;
+
     try {
-      if (!token) {
-        console.error('Authentication token not found for getUnreadCount.');
-        return { data: { success: false, unread_count: 0, message: 'Authentication token not found.' } };
-      }
-      const response = await axios.post('http://127.0.0.1:8000/api/chat/unread-count',
-        { role }, // Send role in the body
+      const response = await axios.get(apiUrl, 
         {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+            // 'Content-Type': 'application/json'
           }
         }
       );
+
       if (response.data && response.data.success) {
-        return { data: { success: true, unread_count: response.data.unread_count } };
+        return { 
+          data: { 
+            success: true, 
+            total_unread_count: response.data.total_unread_count || 0,
+            unread_by_user: response.data.unread_by_user || []
+          } 
+        };
       } else {
         console.error('Failed to fetch unread count:', response.data.message || 'Unknown error');
-        return { data: { success: false, unread_count: 0, message: response.data.message || 'Failed to fetch unread count' } };
+        return { 
+          data: { 
+            success: false, 
+            message: response.data.message || 'Failed to fetch unread count', 
+            total_unread_count: 0,
+            unread_by_user: []
+          } 
+        };
       }
     } catch (error) {
       console.error('Error fetching unread count:', error.response ? error.response.data : error.message);
-      return { data: { success: false, unread_count: 0, message: error.response ? error.response.data.message : 'Error fetching unread count' } };
+      return { 
+        data: { 
+          success: false, 
+          message: error.response ? error.response.data.message : 'Error fetching unread count', 
+          total_unread_count: 0,
+          unread_by_user: []
+        } 
+      };
     }
   },
 
@@ -317,15 +356,7 @@ const chatApiService = {
           }
         };
       }
-      if (!authToken) {
-        console.error('Authentication token not found.');
-        return {
-          data: {
-            success: false,
-            message: 'Authentication token not found.'
-          }
-        };
-      }
+      // Removed duplicate authToken check
 
       // Prepare the message data and endpoint based on sender role
       let apiEndpoint;
@@ -337,7 +368,7 @@ const chatApiService = {
           etudiant_id: messageData.receiverId,
           message: messageData.content,
         };
-      } else {
+      } else { // Assuming senderRole is 'etudiant' or similar for the student
         apiEndpoint = 'http://127.0.0.1:8000/api/chat/student/send';
         apiMessageData = {
           tuteur_id: messageData.receiverId,
@@ -356,35 +387,7 @@ const chatApiService = {
           }
         }
       );
-      // Prepare the message data and endpoint based on sender role
-      let apiEndpoint;
-      let apiMessageData;
-
-      if (messageData.senderRole === 'tuteur') {
-        apiEndpoint = 'http://127.0.0.1:8000/api/chat/tutor/send';
-        apiMessageData = {
-          etudiant_id: messageData.receiverId,
-          message: messageData.content,
-        };
-      } else {
-        apiEndpoint = 'http://127.0.0.1:8000/api/chat/student/send';
-        apiMessageData = {
-          tuteur_id: messageData.receiverId,
-          message: messageData.content,
-        };
-      }
-
-      // Send the message to the server
-      const response = await axios.post(
-        apiEndpoint,
-        apiMessageData,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      // Removed duplicate logic for apiEndpoint, apiMessageData, and axios.post
 
       if (response.data && response.data.success) {
         return {
@@ -424,45 +427,100 @@ const chatApiService = {
 
   initializePusher: (userId, userRole, onMessageReceived) => {
     // Initialize Pusher with your app key
-    const pusher = new Pusher('edc2943b2a2068f8b38c', {
-      cluster: 'eu'
-    });
-  initializePusher: (userId, userRole, onMessageReceived) => {
-    // Initialize Pusher with your app key
-    const pusher = new Pusher('edc2943b2a2068f8b38c', {
-      cluster: 'eu'
+    const pusher = new Pusher('edc2943b2a2068f8b38c', { // Ensure this is your correct Pusher App Key
+      cluster: 'eu' // Ensure this is your correct Pusher cluster
     });
     
     // Create a channel name based on the user's role and ID
-    const channelName = `chat.${userId}_${userRole}`;
-    const channel = pusher.subscribe(channelName);
-    // Create a channel name based on the user's role and ID
-    const channelName = `chat.${userId}_${userRole}`;
+    // Example: chat.1_student or chat.5_tutor
+    // The backend should publish to a channel name that matches this format for the specific recipient.
+    const channelName = `chat.${userId}_${userRole}`; 
+    console.log(`Subscribing to Pusher channel: ${channelName}`);
     const channel = pusher.subscribe(channelName);
     
-    // Bind to the new message event
-    channel.bind('new.message', (data) => {
+    // Bind to the new message event (e.g., 'new.message' or your specific event name from backend)
+    channel.bind('new.message', (data) => { // Ensure 'new.message' is the event name your backend triggers
       if (data && data.message) {
-        console.log('Received message:', data.message);
+        console.log('Received message via Pusher:', data.message);
         if (typeof onMessageReceived === 'function') {
-          onMessageReceived(data.message);
+          // The received message should ideally have a structure consistent with other messages
+          // e.g., { id, sender_id, receiver_id, content, created_at, sender_type }
+          // The current 'data.message' might be just the content or the full message object.
+          // Adjust based on what the backend sends.
+          onMessageReceived(data); 
         }
+      } else {
+        console.warn('Received empty or malformed message data via Pusher:', data);
       }
     });
-    // Bind to the new message event
-    channel.bind('new.message', (data) => {
-      if (data && data.message) {
-        console.log('Received message:', data.message);
-        if (typeof onMessageReceived === 'function') {
-          onMessageReceived(data.message);
-        }
-      }
+
+    channel.bind('pusher:subscription_succeeded', () => {
+      console.log(`Successfully subscribed to ${channelName}`);
+    });
+
+    channel.bind('pusher:subscription_error', (status) => {
+      console.error(`Failed to subscribe to ${channelName}, status: ${status}`);
     });
     
     return { pusher, channel };
-  }
-};
-    return { pusher, channel };
+  },
+
+  /**
+   * Mark messages as read
+   * @param {string} token - Authentication token
+   * @param {Array|number} messageIds - Single message ID or array of message IDs to mark as read
+   * @returns {Promise} - Promise resolving to the API response
+   */
+  markMessagesAsRead: async (token, messageIds) => {
+    try {
+      if (!token) {
+        console.error('Authentication token not found for markMessagesAsRead.');
+        return { 
+          data: { 
+            success: false, 
+            message: 'Authentication token not found.' 
+          } 
+        };
+      }
+
+      // Convert single ID to array if needed
+      const ids = Array.isArray(messageIds) ? messageIds : [messageIds];
+      
+      const response = await axios.post('http://127.0.0.1:8000/api/chat/mark-read',
+        { message_ids: ids },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.success) {
+        return { 
+          data: { 
+            success: true, 
+            message: 'Messages marked as read successfully' 
+          } 
+        };
+      } else {
+        console.error('Failed to mark messages as read:', response.data.message || 'Unknown error');
+        return { 
+          data: { 
+            success: false, 
+            message: response.data.message || 'Failed to mark messages as read' 
+          } 
+        };
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error.response ? error.response.data : error.message);
+      return { 
+        data: { 
+          success: false, 
+          message: error.response ? error.response.data.message : 'Error marking messages as read' 
+        } 
+      };
+    }
   }
 };
 

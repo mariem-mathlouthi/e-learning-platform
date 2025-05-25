@@ -180,22 +180,57 @@ class ChatController extends Controller
         ]);
     }
 
-    public function getUnreadCount(Request $request)
+    public function getUnreadCount($role)
     {
-        $request->validate([
-           'role' =>'required|in:tuteur,etudiant'
-        ]);
+        // $request->validate([
+        //    'role' =>'required|in:tuteur,etudiant'
+        // ]);
 
-        if ($request->role === 'tuteur') {
-            $count = Chat::where('tuteur_id', Auth::id())
+        if ($role === 'tutor') {
+            // Get total unread count
+            $totalCount = Chat::where('tuteur_id', Auth::id())
                          ->where('sender_type', 'etudiant')
                          ->whereNull('read_at')
                          ->count();
-        } else if ($request->role === 'etudiant') {
-            $count = Chat::where('etudiant_id', Auth::id())
+
+            // Get unread count grouped by students
+            $unreadByUser = Chat::where('tuteur_id', Auth::id())
+                         ->where('sender_type', 'etudiant')
+                         ->whereNull('read_at')
+                         ->select('etudiant_id')
+                         ->selectRaw('COUNT(*) as count')
+                         ->groupBy('etudiant_id')
+                         ->with(['etudiant:id,fullname,email,image'])
+                         ->get()
+                         ->map(function($item) {
+                             return [
+                                 'user' => $item->etudiant,
+                                 'unread_count' => $item->count
+                             ];
+                         });
+
+        } else if ($role === 'etudiant' || $role === 'student') {
+            // Get total unread count
+            $totalCount = Chat::where('etudiant_id', Auth::id())
                          ->where('sender_type', 'tuteur')
                          ->whereNull('read_at')
                          ->count();
+
+            // Get unread count grouped by tutors
+            $unreadByUser = Chat::where('etudiant_id', Auth::id())
+                         ->where('sender_type', 'tuteur')
+                         ->whereNull('read_at')
+                         ->select('tuteur_id')
+                         ->selectRaw('COUNT(*) as count')
+                         ->groupBy('tuteur_id')
+                         ->with(['tuteur:id,fullname,email,image'])
+                         ->get()
+                         ->map(function($item) {
+                             return [
+                                 'user' => $item->tuteur,
+                                 'unread_count' => $item->count
+                             ];
+                         });
         } else {
             return response()->json([
                'success' => false,
@@ -203,56 +238,56 @@ class ChatController extends Controller
             ], 400);
         }
 
-
         return response()->json([
             'success' => true,
-            'unread_count' => $count
+            'total_unread_count' => $totalCount,
+            'unread_by_user' => $unreadByUser
         ]);
     }
 
-public function getContacts($role)
-{
-    // $request->validate([
-    //     'role' => 'required|in:tuteur,etudiant',
-    //     'user_id' => 'required'
-    // ]);
+    public function getContacts($role)
+    {
+        // $request->validate([
+        //     'role' => 'required|in:tuteur,etudiant',
+        //     'user_id' => 'required'
+        // ]);
 
-    if ($role === 'tuteur') {
-        // Get all students enrolled in tutor's courses
-        $contacts = CoursSubscriptions::where('tuteur_id', Auth::id())
-            ->with(['etudiant' => function($query) {
-                $query->select('id', 'fullname', 'email', 'image');
-            }])
-            ->select('etudiant_id')
-            ->distinct()
-            ->get()
-            ->pluck('etudiant');
+        if ($role === 'tuteur') {
+            // Get all students enrolled in tutor's courses
+            $contacts = CoursSubscriptions::where('tuteur_id', Auth::id())
+                ->with(['etudiant' => function($query) {
+                    $query->select('id', 'fullname', 'email', 'image');
+                }])
+                ->select('etudiant_id')
+                ->distinct()
+                ->get()
+                ->pluck('etudiant');
+
+            return response()->json([
+                'success' => true,
+                'contacts' => $contacts
+            ]);
+
+        } else if ($role === 'etudiant') {
+            // Get all tutors the student is subscribed to
+            $contacts = CoursSubscriptions::where('etudiant_id', Auth::id())
+                ->with(['tuteur' => function($query) {
+                    $query->select('id', 'fullname', 'email', 'image');
+                }])
+                ->select('tuteur_id')
+                ->distinct()
+                ->get()
+                ->pluck('tuteur');
+
+            return response()->json([
+                'success' => true,
+                'contacts' => $contacts
+            ]);
+        }
 
         return response()->json([
-            'success' => true,
-            'contacts' => $contacts
-        ]);
-
-    } else if ($role === 'etudiant') {
-        // Get all tutors the student is subscribed to
-        $contacts = CoursSubscriptions::where('etudiant_id', Auth::id())
-            ->with(['tuteur' => function($query) {
-                $query->select('id', 'fullname', 'email', 'image');
-            }])
-            ->select('tuteur_id')
-            ->distinct()
-            ->get()
-            ->pluck('tuteur');
-
-        return response()->json([
-            'success' => true,
-            'contacts' => $contacts
-        ]);
+            'success' => false,
+            'message' => 'Invalid role specified'
+        ], 400);
     }
-
-    return response()->json([
-        'success' => false,
-        'message' => 'Invalid role specified'
-    ], 400);
-}
 }

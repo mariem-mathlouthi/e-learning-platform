@@ -24,7 +24,13 @@ class ChatEvent implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new Channel('chat');
+        if ($this->chat->sender_type === 'etudiant') {
+            return new Channel('chat.' . $this->chat->tuteur_id. '_tuteur');
+            
+        } else if ($this->chat->sender_type === 'tuteur') {
+            return new Channel('chat.'. $this->chat->etudiant_id. '_etudiant');
+        }
+        // return new Channel('chat.');
     }
 
     public function broadcastAs()

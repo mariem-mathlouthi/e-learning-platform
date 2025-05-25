@@ -140,8 +140,13 @@ export default {
           if (!this.selectedContact || message.senderId !== this.selectedContact.id) {
             this.showNotification = true;
             this.notificationTitle = 'Nouveau message';
-            this.notificationMessage = message.content;
-            this.notificationTimestamp = new Date(message.timestamp);
+            this.notificationMessage = message.message;
+            this.notificationTimestamp = new Date(message.created_at);
+            
+            // Auto-hide notification after 5 seconds
+            setTimeout(() => {
+              this.showNotification = false;
+            }, 5000);
           }
         }
       );
@@ -176,8 +181,19 @@ export default {
     },
 
     handleNewMessage(message) {
-      // Handle new message notification if needed
+      // Handle new message notification
       console.log('New message received:', message);
+      
+      // Show notification
+      this.showNotification = true;
+      this.notificationTitle = message.title || 'Nouveau message';
+      this.notificationMessage = message.message;
+      this.notificationTimestamp = message.timestamp ? new Date(message.timestamp) : new Date();
+      
+      // Auto-hide notification after 5 seconds
+      setTimeout(() => {
+        this.showNotification = false;
+      }, 5000);
     },
 
     handleError(error) {

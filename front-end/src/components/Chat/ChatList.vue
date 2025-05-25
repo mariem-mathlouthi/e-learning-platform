@@ -130,17 +130,48 @@ export default {
           authToken = studentInfo ? studentInfo.token : null;
         }
 
-        const response = await chatApiService.getContacts(
+        if (!authToken) {
+          console.error('Auth token not found for loading contacts.');
+          this.loading = false;
+          return;
+        }
+
+        // Fetch contacts
+        const contactsResponse = await chatApiService.getContacts(
           this.currentUserId,
           this.currentUserRole,
           authToken
         );
         
-        if (response.data.success) {
-          this.contacts = response.data.contacts;
+        let contacts = [];
+        if (contactsResponse.data.success) {
+          contacts = contactsResponse.data.contacts;
         }
+
+        // Fetch unread counts
+        const unreadCountsResponse = await chatApiService.getUnreadCount(authToken, this.currentUserRole);
+        if (unreadCountsResponse.data.success) {
+          const unreadByUser = unreadCountsResponse.data.unread_by_user;
+          // Emit total unread count for sidebar or other components
+          this.$emit('total-unread-count', unreadCountsResponse.data.total_unread_count);
+
+          // Map unread counts to contacts
+          this.contacts = contacts.map(contact => {
+            const unreadInfo = unreadByUser.find(u => u.user.id === contact.id);
+            return {
+              ...contact,
+              unreadCount: unreadInfo ? unreadInfo.unread_count : 0
+            };
+          });
+        } else {
+          // If fetching unread counts fails, still display contacts without counts
+          this.contacts = contacts.map(contact => ({ ...contact, unreadCount: 0 }));
+        }
+
       } catch (error) {
-        console.error('Error loading contacts:', error);
+        console.error('Error loading contacts or unread counts:', error);
+        // Initialize contacts to empty array on error to prevent issues
+        this.contacts = []; 
       } finally {
         this.loading = false;
       }

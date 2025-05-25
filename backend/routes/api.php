@@ -47,15 +47,15 @@ Route::middleware('auth:sanctum')->group(function() {
     Route::prefix('chat')->group(function () {
         // Student to Tutor messaging
         Route::post('/student/send', [ChatController::class, 'sendMessageToTuteur']);
-        Route::get('/student/messages/{tutor_id}', [ChatController::class, 'getStudentMessages']);
+        Route::get('/etudiant/messages/{tutor_id}', [ChatController::class, 'getStudentMessages']);
         
         // Tutor to Student messaging
         Route::post('/tutor/send', [ChatController::class, 'sendMessageToEtudiant']);
-        Route::get('/tutor/messages/{student_id}', [ChatController::class, 'getTutorMessages']);
+        Route::get('/tuteur/messages/{student_id}', [ChatController::class, 'getTutorMessages']);
         
         // Common chat functionalities
         Route::post('/mark-read', [ChatController::class, 'markAsRead']);
-        Route::get('/unread-count', [ChatController::class, 'getUnreadCount']);
+        Route::get('/unread-count/{role}', [ChatController::class, 'getUnreadCount']);
 
         Route::get('/contacts/{role}', [ChatController::class, 'getContacts']);
     });
